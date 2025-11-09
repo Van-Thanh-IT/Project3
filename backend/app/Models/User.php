@@ -2,44 +2,79 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+use App\Notifications\ResetPasswordNotification;
 
-class User extends Authenticatable
+
+class User extends Authenticatable implements JWTSubject
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasFactory, Notifiable;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    protected $table = "users";
+
     protected $fillable = [
-        'name',
+        'username',
         'email',
         'password',
+        'phone',
+        'provider',
+        'provider_id',
+        'avatar',
+        'status',
+        'gender',
+        'date_of_birth'
     ];
+    // Đây là một class Notification
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new ResetPasswordNotification($token));
+    }
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var array<int, string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    // Quan hệ User -> Roles
+    public function roles()
+    {
+        return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id');
+    }
 
-    /**
-     * The attributes that should be cast.
-     *
-     * @var array<string, string>
-     */
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-    ];
+    // Lấy tất cả permissions thông qua roles
+    public function permissions()
+    {
+        // Load roles kèm permissions nếu chưa load
+        $this->loadMissing('roles.permissions');
+
+        return $this->roles
+                    ->pluck('permissions')   // collection of collection
+                    ->flatten()             // gộp thành 1 collection duy nhất
+                    ->unique('id');         // loại bỏ trùng lặp
+    }
+
+    // Kiểm tra user có role
+    public function hasRole($role)
+    {
+        return $this->roles->pluck('name')->contains($role);
+    }
+
+    // Kiểm tra user có permission
+    public function hasPermission($permission)
+    {
+        return $this->permissions()->pluck('name')->contains($permission);
+    }
+
+    // JWT
+    public function getJWTIdentifier()
+    {
+        return $this->getKey();
+    }
+
+    public function getJWTCustomClaims()
+    {
+        return [
+            'username'    => $this->username,
+            'roles'       => $this->roles->pluck('name'),
+            'permissions' => $this->permissions()->pluck('name')
+        ];
+    }
 }

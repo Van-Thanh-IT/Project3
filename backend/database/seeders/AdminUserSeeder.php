@@ -1,26 +1,17 @@
 <?php
-namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
+namespace Database\Seeders;
+
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Schema;
 
-class AppServiceProvider extends ServiceProvider
+class AdminUserSeeder extends Seeder
 {
-    public function register()
+    public function run(): void
     {
-        //
-    }
-
-    public function boot()
-    {
-        if (!Schema::hasTable('users')) {
-            return; // bảng chưa tồn tại, bỏ qua
-        }
-
-        // Chỉ tạo admin khi chưa có user nào
         if (User::count() === 0) {
             $adminRole = Role::firstOrCreate(
                 ['name' => 'admin'],
@@ -35,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
             ]);
 
             $admin->roles()->syncWithoutDetaching($adminRole->id);
-            info('Admin mặc định đã được tạo');
+            $this->command->info('Admin mặc định đã được tạo');
         }
     }
 }
