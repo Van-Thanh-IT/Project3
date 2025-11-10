@@ -42,14 +42,16 @@ class User extends Authenticatable implements JWTSubject
     // Lấy tất cả permissions thông qua roles
     public function permissions()
     {
-        // Load roles kèm permissions nếu chưa load
-        $this->loadMissing('roles.permissions');
+        $this->loadMissing('roles.permissions'); // load roles kèm permissions
 
+        // Lấy permissions active
         return $this->roles
-                    ->pluck('permissions')   // collection of collection
-                    ->flatten()             // gộp thành 1 collection duy nhất
+                    ->pluck('permissions') // collection of collection
+                    ->flatten()            // gộp thành 1 collection
+                    ->where('is_active', 1) // chỉ lấy quyền active
                     ->unique('id');         // loại bỏ trùng lặp
     }
+
 
     // Kiểm tra user có role
     public function hasRole($role)
@@ -58,9 +60,15 @@ class User extends Authenticatable implements JWTSubject
     }
 
     // Kiểm tra user có permission
-    public function hasPermission($permission)
+    public function hasPermission($permissionName)
     {
-        return $this->permissions()->pluck('name')->contains($permission);
+        // Lấy tất cả permission của user mà is_active = true
+        $permissions = $this->permissions()
+                            ->where('is_active', true)   // chỉ lấy quyền đang hoạt động
+                            ->pluck('name')
+                            ->toArray();
+
+        return in_array($permissionName, $permissions);
     }
 
     // JWT

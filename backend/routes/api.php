@@ -3,8 +3,9 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
-use App\Http\Controllers\API\PermissionController;
-use App\Http\Controllers\API\ProductController;
+use App\Http\Controllers\API\Admin\PermissionController;
+use App\Http\Controllers\API\Admin\ProductController;
+use App\Http\Controllers\API\Admin\UserController;
  
 // nhóm auth
 Route::prefix("auth")->group(function(){
@@ -27,11 +28,10 @@ Route::prefix("auth")->group(function(){
 });
 
 Route::middleware(["auth:jwt", "check.role:admin"])->prefix("admin")->group(function(){
-    Route::prefix("permissions")->group(function(){
+    Route::prefix("permission")->group(function(){
         Route::get("/", [PermissionController::class, "index"]);
         Route::post("/", [PermissionController::class, "store"]);
-        Route::get("/{id}", [PermissionController::class, "show"]);
-        Route::put("/{id}", [PermissionController::class, "update"]);
+        Route::post('{permissionId}/assign-staff', [PermissionController::class, 'assignPermissionToStaff']);
         Route::delete("/{id}", [PermissionController::class, "destroy"]);
     });
 
@@ -40,12 +40,18 @@ Route::middleware(["auth:jwt", "check.role:admin"])->prefix("admin")->group(func
 
 Route::middleware(["auth:jwt", "check.role:staff"])->prefix("staff")->group(function(){
         
-    Route::prefix("products")->group(function(){
+    Route::prefix("product")->group(function(){
         Route::get("/", [ProductController::class, "index"]);
         Route::post("/", [ProductController::class, "store"]);
-        Route::get("/{id}", [ProductController::class, "show"]);
         Route::put("/{id}", [ProductController::class, "update"]);
         Route::delete("/{id}", [ProductController::class, "destroy"]);
+    });
+
+    Route::prefix("user")->group(function(){
+        Route::get("/", [UserController::class, "index"]);
+        Route::post("/", [UserController::class, "store"]);
+        Route::put("/{id}", [UserController::class, "update"]);
+        Route::delete("/{id}", [UserController::class, "destroy"]);
     });
 });
 

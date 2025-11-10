@@ -1,33 +1,36 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\API\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\User;
 
 class ProductController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(User $user)
     {
-        return "Lấy sản phẩm";
+        $this->authorize('product_view', $user);
+        return "Xem sản phẩm";
     }
 
     /**
      * Show the form for creating a new resource.
      */
-    public function create()
+    public function create(User $user)
     {
-       
+      
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(User $user)
     {
+         $this->authorize('product_create', $user);
          return "Tạo sản phẩm";
     }
 
