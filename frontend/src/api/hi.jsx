@@ -1,6 +1,6 @@
 import React from "react";
 
-const ThemeContext = () => {
+const Hi = () => {
   return (
     <div>
       <h1>hi</h1>
@@ -8,4 +8,4 @@ const ThemeContext = () => {
   );
 };
 
-export default ThemeContext;
+export default Hi;

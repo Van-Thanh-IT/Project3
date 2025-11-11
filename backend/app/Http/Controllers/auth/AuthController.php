@@ -18,8 +18,7 @@ class AuthController extends Controller
 {
    // Hàm đăng ký
     public function register(RegisterUserRequest $request){
-        $user = null;
-         DB::transaction(function () use ($request) {
+         $user=  DB::transaction(function () use ($request) {
             // Tạo user
             $user = User::create([ 
                 'username' => $request->username,
@@ -31,8 +30,6 @@ class AuthController extends Controller
             $this->assignDefaultRole( $user);
             // Ẩn password trước khi trả về
             $user->makeHidden(['password']);
-
-            return $user;
          });
 
         return response()->json([
@@ -94,7 +91,6 @@ class AuthController extends Controller
     }
 
     
-
     // lấy thoại người dùng hiện tại
     public function me(){
         return response()->json(auth()->user());

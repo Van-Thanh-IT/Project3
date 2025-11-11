@@ -16,8 +16,13 @@ select * from roles;
 CREATE TABLE permissions (
     id INT PRIMARY KEY AUTO_INCREMENT,           -- 🔑 ID quyền
     name VARCHAR(100) UNIQUE NOT NULL,           -- Tên quyền (vd: create_product)
-    description VARCHAR(255) NULL                -- Mô tả chi tiết quyền
+    description VARCHAR(255) NULL,                -- Mô tả chi tiết quyền
+    is_active BOOLEAN NULL DEFAULT true,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+delete from permissions where id = 1;
+update permissions set is_active = 1 where id=8;
 select * from permissions;
 -- Bảng users: Lưu thông tin tài khoản người dùng
 CREATE TABLE users (

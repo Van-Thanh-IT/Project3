@@ -1,11 +1,11 @@
 import React from "react";
 
-const Hook = () => {
+const Hi = () => {
   return (
     <div>
-      <h1>Hi</h1>
+      <h1>hi</h1>
     </div>
   );
 };
 
-export default Hook;
+export default Hi;

@@ -1,6 +1,6 @@
 import React from "react";
 
-const Button = () => {
+const Cloudinary = () => {
   return (
     <div>
       <h1>hi</h1>
@@ -8,4 +8,4 @@ const Button = () => {
   );
 };
 
-export default Button;
+export default Cloudinary;
