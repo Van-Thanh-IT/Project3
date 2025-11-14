@@ -12,20 +12,19 @@ Route::prefix("auth")->group(function(){
     // public routes
     Route::post("/register", [AuthController::class, "register"]);
     Route::post("/login", [AuthController::class, "login"]);
-    Route::get("/google", [AuthController::class, "redirectToGoogle"]);
-    Route::get("/google/callback", [AuthController::class, "loginWithGoogle"]);
-    Route::get("/facebook", [AuthController::class, "redirectToFacebook"]);
-    Route::get("/facebook/callback", [AuthController::class, "loginWithFacebook"]);
+    Route::post("/google/login", [AuthController::class, "loginWithGoogle"]);
+    Route::post("/facebook/login", [AuthController::class, "loginWithFacebook"]);
     Route::post("/forgot-password", [AuthController::class, "forgotPassword"]);
-    Route::post('/password/reset', [AuthController::class, 'reset'])->name('password.reset');;
-    
+    Route::post('/reset-password', [AuthController::class, 'reset'])->name('password.reset');
+     
     //protected routes
     Route::middleware('auth:jwt')->group(function(){
         Route::post("/logout", [AuthController::class, "logout"]);
-        Route::post("/refresh", [AuthController::class, "refresh"]);
+        Route::post("/refresh-token", [AuthController::class, "refresh"]);
         Route::post("/me", [AuthController::class, "me"]);
-    });
+    });  
 });
+
 
 Route::middleware(["auth:jwt", "check.role:admin"])->prefix("admin")->group(function(){
     Route::prefix("permission")->group(function(){

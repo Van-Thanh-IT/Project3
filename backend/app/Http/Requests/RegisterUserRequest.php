@@ -17,7 +17,7 @@ class RegisterUserRequest extends FormRequest
         return [
             'username' => 'required|min:5|max:50',
             'email'    => 'required|email|unique:users,email',
-            'password' => 'required|min:8|confirmed',
+            'password' => 'required|min:8',
             'phone'    => 'required|unique:users,phone',
         ];
     }
@@ -30,7 +30,6 @@ class RegisterUserRequest extends FormRequest
             'username.max' => "Tên đăng nhập phải có nhất 50 ký tự!", 
             'password.required' => 'Vui lòng nhập mật khẩu!',
             'password.min'      => 'Mật khẩu phải có ít nhất 8 ký tự!',
-            'password.confirmed' => 'Mật khẩu không khớp!',
             'email.required'    => 'Vui lòng nhập email!',
             'email.email'       => 'Email không hợp lệ!',
             'email.unique'      => 'Email đã tồn tại trong hệ thống!',

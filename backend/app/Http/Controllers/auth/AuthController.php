@@ -9,15 +9,19 @@ use App\Models\Role;
 use App\Http\Requests\RegisterUserRequest;
 use Illuminate\Support\Facades\Password;
 use App\Http\Requests\ForgotPasswordRequest;
+use App\Http\Requests\ResetPasswordRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
 {
    // Hàm đăng ký
     public function register(RegisterUserRequest $request){
+        Log::info($request->all());
          $user=  DB::transaction(function () use ($request) {
             // Tạo user
             $user = User::create([ 
@@ -41,14 +45,16 @@ class AuthController extends Controller
     // hàm đăng nhập
     public function login(Request $request){
         $credentials = $request->only('email', 'password');
-        if (!$token = auth()->attempt($credentials)) {
-            return response()->json(['error' => 'Bạn chưa đăng nhập!'], 401);
+        $token = auth()->attempt($credentials);
+        if (!$token) {
+            return response()->json(['message' => 'email hoặc mật khẩu không đúng!'], 401);
         }
         return $this->respondWithToken($token);
     }
 
+
     // hàm quên mật khẩu
-    public function forgotPassword(ForgotPasswordRequest $request)
+   public function forgotPassword(ForgotPasswordRequest $request)
     {
         $status = Password::sendResetLink(
             $request->only('email')
@@ -57,23 +63,29 @@ class AuthController extends Controller
         if ($status === Password::RESET_LINK_SENT) {
             return response()->json([
                 'success' => true,
-                'message' => __($status)
-            ]);
-        } else {
+                'message' => "Email đặt lại mật khẩu đã được gửi! Vui lòng kiểm tra hộp thư của bạn."
+            ], Response::HTTP_OK); // 200
+        }
+
+        // Xử lý lỗi cụ thể
+        if ($status === Password::RESET_THROTTLED) {
             return response()->json([
                 'success' => false,
-                'message' => __($status)
-            ], 500);
+                'message' => 'Bạn vừa yêu cầu reset, vui lòng đợi 1 phút trước khi thử lại.',
+                'error' => __($status) 
+            ], Response::HTTP_TOO_MANY_REQUESTS); // 429
         }
+
+        // Các lỗi khác (ví dụ: Password::INVALID_USER - "passwords.user")
+        return response()->json([
+            'success' => false,
+            'message' => 'Không tìm thấy người dùng với địa chỉ email này.',
+            'error' => __($status)
+        ], Response::HTTP_UNPROCESSABLE_ENTITY); // 422
     }
 
-     public function reset(Request $request)
+     public function reset(ResetPasswordRequest $request)
     {
-        $request->validate([
-            'token' => 'required',
-            'email' => 'required|email',
-            'password' => 'required|min:8|confirmed',
-        ]);
 
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
@@ -87,13 +99,17 @@ class AuthController extends Controller
             return response()->json(['message' => 'Đặt lại mật khẩu thành công']);
         }
 
-        return response()->json(['message' => __($status)], 400);
+        return response()->json(['message' => 'Mã đặt lại mật khẩu đã hết hạn hoặc không hợp lệ.', 400]);
     }
-
     
     // lấy thoại người dùng hiện tại
     public function me(){
-        return response()->json(auth()->user());
+        $user = auth()->user();
+        return response()->json([
+            'user' => $user,
+            'roles' => $user->getRoleNames(), 
+            'permissions' => $user->getAllPermissions()->pluck('name') 
+        ]);
     }
 
     //hàm logout
@@ -107,107 +123,93 @@ class AuthController extends Controller
         return $this->respondWithToken(auth()->refresh());
     }
 
-    //hàm đăng hướng tới đăng nhập google
-    public function redirectToGoogle(){
-        try {
-            $redirectUrl = Socialite::driver('google')
-            ->stateless()
-            ->redirect()
-            ->getTargetUrl();
-             return response()->json([
-                'success' => true,
-                'url' => $redirectUrl
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error generating Google login URL',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    public function loginWithGoogle(){
-        try {
-            $googleUser = Socialite::driver('google')
-            ->stateless()
-            ->user();
-            $user = User::firstOrCreate(
-                ['email' => $googleUser->getEmail()],
-                [
-                    'username' => $googleUser->getName(),
-                    'provider_id' => $googleUser->getId(),
-                    'password' => bcrypt(uniqid()),
-                    'provider' => 'google',
-                    'avatar' => $googleUser->getAvatar()
-                ]
-            );
-
-            $this->assignDefaultRole($user);
-
-            $token = JWTAuth::fromUser($user);  
-            return  $this->respondWithToken($token);
-        } catch (Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Lỗi đăng nhập google',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    //hàm đăng hướng tới đăng nhập facebook
-     public function redirectToFacebook(){
-        try {
-        $redirectUrl = Socialite::driver('facebook')
-            ->stateless()
-            ->scopes(['email'])
-            ->redirect()
-            ->getTargetUrl();
-
-        return response()->json([
-            'success' => true,
-            'url' => $redirectUrl
-        ]);
-    } catch (Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Error generating Facebook login URL',
-            'error' => $e->getMessage()
-        ], 500);
-    }
-    }
-
-    //hàm đăng nhập tới facebook
-    public function loginWithFacebook(Request $request)
+    //Hàm đăng nhập google
+    public function loginWithGoogle(Request $request)
     {
-         try {
-            $facebookUser = Socialite::driver('facebook')->stateless()->user();
-            
-            $user = User::create([
-                'username' => $facebookUser->getName(),
-                'email' => $facebookUser->getId() . '@facebook.com',
-                'provider_id' => $facebookUser->getId(),
-                'provider' => 'facebook',
-                'password' => bcrypt(uniqid()),
-                'avatar' => $facebookUser->getAvatar(),
-            ]);
+        $googleToken = $request->token;
 
+        try {
+            // Lấy thông tin user từ Google token
+            $googleUser = Socialite::driver('google')->stateless()->userFromToken($googleToken);
+            $user = User::where('email', $googleUser->getEmail())->first();
+
+            if ($user) {
+                $user->update([
+                    'username' => $googleUser->getName(),
+                    'provider' => 'google',
+                    'provider_id' => $googleUser->getId(),
+                    'avatar' => $googleUser->getAvatar(),
+                ]);
+            } else {
+                $user = User::create([
+                    'email' => $googleUser->getEmail(),
+                    'username' => $googleUser->getName(),
+                    'provider' => 'google',
+                    'provider_id' => $googleUser->getId(),
+                    'avatar' => $googleUser->getAvatar(),
+                    'password' => bcrypt(uniqid()),
+                ]);
+            }
             $this->assignDefaultRole($user);
-        
+
             $token = JWTAuth::fromUser($user);
             return $this->respondWithToken($token);
 
-             
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Lỗi đăng nhập Facebook!',
+                'message' => 'Lỗi đăng nhập Google',
                 'error' => $e->getMessage()
-            ]);
+            ], 500);
         }
     }
-        
+
+    public function loginWithFacebook(Request $request)
+    {
+        $fbToken = $request->token;
+        try {
+            // Lấy thông tin user từ Facebook token
+            $fbUser = Socialite::driver('facebook')->stateless()->userFromToken($fbToken);
+            $user = User::where('provider_id', $fbUser->getId())->first();
+
+            if ($user) {
+                $user->update([
+                    'username' => $fbUser->getName(),
+                    'provider' => 'facebook',
+                    'provider_id' => $fbUser->getId(),
+                    'avatar' => $fbUser->getAvatar(),
+                ]);
+            } else {
+                $user = User::create([
+                    'email' => $fbUser->getEmail(),
+                    'username' => $fbUser->getName(),
+                    'provider' => 'facebook',
+                    'provider_id' => $fbUser->getId(),
+                    'avatar' => $fbUser->getAvatar(),
+                    'password' => bcrypt(uniqid()), // password mặc định
+                ]);
+            }
+
+            $this->assignDefaultRole($user);
+
+            // Tạo JWT
+            $token = JWTAuth::fromUser($user);
+
+            return response()->json([
+                'success' => true,
+                'access_token' => $token,
+                'token_type' => 'bearer',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lỗi đăng nhập Facebook',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+            
      protected function respondWithToken($token)
     {
         return response()->json([
@@ -218,13 +220,12 @@ class AuthController extends Controller
     }
 
 
-    
     // Hàm để gán vai trò mặc định
     private function assignDefaultRole(User $user)
     {
         // Kiểm tra xem người dùng đã có vai trò nào chưa
         if ($user->roles()->count() === 0) {
-            $defaultRole = Role::where('name', 'use')->first();
+            $defaultRole = Role::where('name', 'user')->first();
             if ($defaultRole) {
                 $user->roles()->syncWithoutDetaching($defaultRole->id);
             } else {

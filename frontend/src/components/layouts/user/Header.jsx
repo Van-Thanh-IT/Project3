@@ -19,10 +19,13 @@ const Header = () => {
               <Link to="/cart">Giỏ hàng</Link>
             </li>
             <li>
-              <Link to="/login">Đang nhập</Link>
+              <Link to="/login">Đăng nhập</Link>
             </li>
             <li>
               <Link to="/register">Đăng ký</Link>
+            </li>
+              <li>
+              <Link to="/profile">Trang cá nhân</Link>
             </li>
           </ul>
         </nav>
