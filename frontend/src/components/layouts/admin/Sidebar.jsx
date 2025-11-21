@@ -1,10 +1,12 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import * as FaIcons from "react-icons/fa"; // dùng namespace để tránh lỗi React child
-
+import { useAuth } from "../../../contexts/AuthContext";
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const {roles} = useAuth();
+  const isStaff = roles.includes("staff");
 
   const isActive = (path) => location.pathname === path;
 
@@ -16,7 +18,12 @@ const Sidebar = () => {
 
   const menuItems = [
     { name: "Trang chủ", path: "/admin", icon: <FaIcons.FaHome size={20} /> },
+    {name:"Quản lý nhân viên", path: "/admin/staff", icon: <FaIcons.FaUsers size={20} /> },
+    {name: "Quản lý nhười bán hàng", path: "/admin/sellers", icon: <FaIcons.FaUsers size={20} /> },
+    {name: "Quản lý người dùng", path: "/admin/users", icon: <FaIcons.FaUsers size={20} /> },
+    {name: "Quản lý danh mục", path: "/admin/categories", icon: <FaIcons.FaListAlt size={20} /> },
     { name: "Quản lý sản phẩm", path: "/admin/products", icon: <FaIcons.FaBoxOpen size={20} /> },
+
     { name: "Cài đặt", path: "/admin/settings", icon: <FaIcons.FaListAlt size={20} /> },
   ];
 
@@ -26,8 +33,15 @@ const Sidebar = () => {
         Admin
       </div>
 
-      <ul className="mt-4 flex flex-col gap-1 px-2">
-        {menuItems.map((item) => (
+     <ul className="mt-4 flex flex-col gap-1 px-2">
+      {menuItems
+        .filter(item => {
+          // Ẩn menu quản lý nhân viên nếu là staff
+          if (item.name === "Quản lý nhân viên" && isStaff) return false;
+            if (item.name === "Cài đặt" && isStaff) return false;
+          return true;
+        })
+        .map((item) => (
           <li key={item.path}>
             <Link
               to={item.path}

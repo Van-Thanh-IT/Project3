@@ -5,52 +5,40 @@ namespace App\Http\Controllers\API\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Permission;
+use App\Models\Role;
+use App\Models\User;
 use App\Http\Requests\PermissionRequest;
 use App\Http\Requests\AssignPermissionRequest;
 use Illuminate\Support\Facades\DB;
-use App\Models\Role;
-use App\Models\User;
 
 class PermissionController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+
+    public function getPermissionsWithStaffStatus()
     {
-        $permission = Permission::all();
-        return response()->json($permission);
+        $staffRole = Role::where('name', 'staff')->firstOrFail();
+
+        $allPermissions = Permission::all();
+        $staffPermissionIds = $staffRole->permissions()->pluck('permissions.id')->toArray();
+
+        return response()->json([
+            'permissions' => $allPermissions,
+            'staff_permission_ids' => $staffPermissionIds
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-   public function store(PermissionRequest $request)
+    // Tạo quyền mới và gán cho role admin
+    public function createPermission(PermissionRequest $request)
     {
         try {
-            // Bắt đầu transaction
             $permission = DB::transaction(function () use ($request) {
-                // Tạo quyền mới
-                return Permission::create([
-                    'name' => $request->name,
-                    'description' => $request->description,
-                ]);
+                return Permission::create($request->only('name', 'description'));
             });
 
-            // Lấy tất cả role "admin"
-            $adminRoles = Role::where('name', 'admin')->get();
-            // Gán quyền mới cho tất cả admin
-            foreach ($adminRoles as $role) {
-                if (!$role->permissions->contains($permission->id)) {
-                    $role->permissions()->attach($permission->id);
-                }
-            }
-
-             // Gán quyền này cho role staff mặc định
-            // $staffRole = Role::where('name', 'staff')->first();
-            // if ($staffRole) {
-            //     $staffRole->permissions()->syncWithoutDetaching($permission->id);
-            // }
+            // Gán quyền mới cho tất cả admin nếu chưa có
+            Role::where('name', 'admin')->get()->each(function($role) use ($permission) {
+                $role->permissions()->syncWithoutDetaching($permission->id);
+            });
 
             return response()->json([
                 'status' => 'success',
@@ -66,75 +54,36 @@ class PermissionController extends Controller
         }
     }
 
-    public function assignPermissionToStaff(AssignPermissionRequest $request, $permissionId){
+    public function assignPermissionToStaff(Request $request)
+    {
         try {
-            // Lấy quyền
-            $permission = Permission::findOrFail($permissionId);
+            $permissionIds = $request->input('permission_ids', []); // quyền muốn thêm
+            $removeIds = $request->input('remove_permission_ids', []); // quyền muốn xóa
 
-            // Lấy role "staff"
-            $staffRole = Role::where('name', 'staff')->first();
+            $staffRole = Role::where('name', 'staff')->firstOrFail();
 
-            if (!$staffRole) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Role "staff" không tồn tại trong hệ thống!',
-                ], 404);
+            if (!empty($permissionIds)) {
+                $staffRole->permissions()->syncWithoutDetaching($permissionIds);
             }
 
-            // Lấy danh sách ID nhân viên gửi lên
-            $staffIds = $request->input('staff_ids', []);
-            // Lấy danh sách user có role staff
-            $staffUsers = User::whereIn('id', $staffIds)
-                ->whereHas('roles', fn($q) => $q->where('name', 'staff'))
-                ->get();
-
-            // Nếu có user không phải staff → báo lỗi
-            $invalidUsers = collect($staffIds)->diff($staffUsers->pluck('id'));
-            if ($invalidUsers->isNotEmpty()) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Các ID sau không phải nhân viên (staff): ' . 'ID: '.$invalidUsers->join(' , '),
-                ], 403);
-            }
-
-            // Gán quyền cho role staff nếu chưa có
-            if (!$staffRole->permissions->contains($permission->id)) {
-                $staffRole->permissions()->attach($permission->id);
+            if (!empty($removeIds)) {
+                $staffRole->permissions()->detach($removeIds);
             }
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Gán quyền "' . $permission->name . '" thành công cho các nhân viên!',
-                'assigned_staff' => $staffUsers->pluck('id'),
+                'message' => 'Cập nhật quyền thành công!',
+                'role' => $staffRole->name,
+                'added_permission_ids' => $permissionIds,
+                'removed_permission_ids' => $removeIds
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Lỗi hệ thống: ' . $e->getMessage(),
+                'message' => 'Lỗi hệ thống: ' . $e->getMessage()
             ], 500);
         }
     }
 
-
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy($id)
-    {
-         $permission = Permission::find($id);
-            if (!$permission) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Quyền không tồn tại',
-            ], 404);
-        }
-        $permission->is_active = !$permission->is_active;
-        $permission->save();
-        return response()->json([
-            'status' => 'success',
-            'message' => $permission->is_active ? 'Quyền đã được khôi phục thành công!':'Quyền đã được xóa thành công!',
-        ]);
-    }
 }

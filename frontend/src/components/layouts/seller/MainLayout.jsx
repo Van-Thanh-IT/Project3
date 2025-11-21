@@ -1,10 +1,9 @@
-import React from "react";
-import Topbar from "./Topbar";
-import Sidebar from "./Sidebar";
-import { Outlet } from "react-router-dom";
-
-const AdminMainLayout = () => {
-  return (
+import React from 'react';
+import Sidebar from './Sidebar';
+import Topbar from './Topbar';
+import { Outlet } from 'react-router-dom';
+const MainLayout = () => {
+      return (
     <div className="flex">
       <Sidebar />
       <div className="flex-1 flex flex-col ml-64">
@@ -15,6 +14,6 @@ const AdminMainLayout = () => {
       </div>
     </div>
   );
-};
+}
 
-export default AdminMainLayout;
+export default MainLayout;

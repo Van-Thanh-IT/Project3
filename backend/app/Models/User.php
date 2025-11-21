@@ -8,7 +8,6 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 use Illuminate\Notifications\Notifiable;
 use App\Notifications\ResetPasswordNotification;
 
-
 class User extends Authenticatable implements JWTSubject
 {
     use HasFactory, Notifiable;
@@ -16,73 +15,92 @@ class User extends Authenticatable implements JWTSubject
     protected $table = "users";
 
     protected $fillable = [
-        'username',
-        'email',
-        'password',
-        'phone',
-        'provider',
-        'provider_id',
-        'avatar',
-        'status',
-        'gender',
-        'date_of_birth'
+        'username', 'email', 'password', 'phone',
+        'provider', 'provider_id', 'avatar',
+        'status', 'gender', 'date_of_birth'
     ];
-    // Đây là một class Notification
+
+    protected $hidden = ['roles', 'permissions', 'pivot'];
+
+    /**
+     * Gửi email reset password
+     */
     public function sendPasswordResetNotification($token)
     {
         $this->notify(new ResetPasswordNotification($token));
     }
 
-    // Quan hệ User -> Roles
+    public function shopApplications(){
+        return $this->hasMany(ShopApplication::class);
+    }
+
+    public function shop()
+    {
+        return $this->hasOne(Shop::class, 'seller_id');
+    }
+
+
+    /**
+     * Quan hệ User -> UserLog
+     */
+    public function userLogs()
+    {
+        return $this->hasMany(UserLog::class);
+    }
+
+    /**
+     * Quan hệ User -> Role
+     */
     public function roles()
     {
         return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id');
     }
 
-    // Lấy tất cả permissions thông qua roles
+    /**
+     * Lấy tất cả permission thông qua roles, chỉ lấy quyền active
+     */
     public function permissions()
     {
-        $this->loadMissing('roles.permissions'); // load roles kèm permissions
-
-        // Lấy permissions active
-        return $this->roles
-                    ->pluck('permissions') // collection of collection
-                    ->flatten()            // gộp thành 1 collection
-                    ->where('is_active', 1) // chỉ lấy quyền active
-                    ->unique('id');         // loại bỏ trùng lặp
+        return $this->roles()
+                    ->with('permissions')
+                    ->get()
+                    ->pluck('permissions')
+                    ->flatten()
+                    ->unique('id'); 
     }
 
-
-    // Kiểm tra user có role
-    public function hasRole($role)
+    /**
+     * Kiểm tra user có role
+     */
+    public function hasRole(string $role): bool
     {
         return $this->roles->pluck('name')->contains($role);
     }
 
-    // Kiểm tra user có permission
-    public function hasPermission($permissionName)
+    /**
+     * Kiểm tra user có permission
+     */
+    public function hasPermission(string $permissionName): bool
     {
-        // Lấy tất cả permission của user mà is_active = true
-        $permissions = $this->permissions()
-                            ->where('is_active', true)   // chỉ lấy quyền đang hoạt động
-                            ->pluck('name')
-                            ->toArray();
-
-        return in_array($permissionName, $permissions);
+        return $this->permissions()
+                    ->pluck('name')
+                    ->contains($permissionName);
     }
 
-    // JWT
+    /**
+     * JWT
+     */
     public function getJWTIdentifier()
     {
         return $this->getKey();
     }
 
-    public function getJWTCustomClaims()
+    public function getJWTCustomClaims(): array
     {
         return [
             'username'    => $this->username,
             'roles'       => $this->roles->pluck('name'),
-            'permissions' => $this->permissions()->pluck('name')
+            'permissions' => $this->permissions()->pluck('name'),
         ];
     }
 }

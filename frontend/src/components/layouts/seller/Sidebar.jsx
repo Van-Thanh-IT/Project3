@@ -1,0 +1,62 @@
+import React from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import * as FaIcons from "react-icons/fa"; // dùng namespace để tránh lỗi React child
+import { useAuth } from "../../../contexts/AuthContext";
+
+const Sidebar = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const isActive = (path) => location.pathname === path;
+
+  const handleLogout = async () => {
+    if (!window.confirm("Bạn có chắc muốn đăng xuất không?")) return;
+    await logout();
+    navigate("/login");
+  };
+
+  const handleProfile = () => navigate("/profile");
+
+  const menuItems = [
+    { name: "Trang chủ", path: "/seller", icon: <FaIcons.FaHome size={20} /> },
+    { name: "Quản lý sản phẩm", path: "/seller/products", icon: <FaIcons.FaBoxOpen size={20} /> },
+    { name: "Cài đặt", path: "/seller/settings", icon: <FaIcons.FaListAlt size={20} /> },
+  ];
+
+  return (
+    <div className="fixed top-0 left-0 h-screen w-64 bg-gray-200  flex flex-col overflow-y-auto">
+      <div className="h-16 flex items-center justify-center text-xl font-bold border-b border-gray-700">
+      <button onClick={handleProfile}>Quay lại</button> - Vai trò 
+      </div>
+
+      <ul className="mt-4 flex flex-col gap-1 px-2">
+        {menuItems.map((item) => (
+          <li key={item.path}>
+            <Link
+              to={item.path}
+              className={`flex items-center gap-3 px-4 py-3 rounded hover:bg-gray-700 transition-colors ${
+                isActive(item.path) ? "bg-green-500" : ""
+              }`}
+            >
+              {item.icon}
+              <span>{item.name}</span>
+            </Link>
+          </li>
+        ))}
+
+        <li className="mt-4">
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 w-full px-4 py-3 rounded hover:bg-gray-700 transition-colors text-left"
+          >
+            <FaIcons.FaSignOutAlt size={20} />
+            <span>Đăng xuất</span>
+          </button>
+        </li>
+      </ul>
+    </div>
+  );
+};
+
+export default Sidebar;

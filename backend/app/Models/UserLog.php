@@ -10,9 +10,16 @@ class UserLog extends Model
 {
     use HasFactory;
 
-    protected $table = 'UserLogs';
+    protected $table = 'user_logs';
 
-    protected $guarded = [];
+    protected $fillable = [
+        'user_id',
+        'action',
+        'ip_address',
+        'user_agent'
+    ];
+
+    public $timestamps = false;
 
     public function user()
     {

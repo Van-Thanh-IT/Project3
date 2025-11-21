@@ -1,5 +1,6 @@
 CREATE DATABASE project3;
 USE project3;
+drop database project3;
 -- =====================================================================
 -- 🧩 NHÓM 1: HỆ THỐNG PHÂN QUYỀN NGƯỜI DÙNG
 -- =====================================================================
@@ -17,10 +18,10 @@ CREATE TABLE permissions (
     id INT PRIMARY KEY AUTO_INCREMENT,           -- 🔑 ID quyền
     name VARCHAR(100) UNIQUE NOT NULL,           -- Tên quyền (vd: create_product)
     description VARCHAR(255) NULL,                -- Mô tả chi tiết quyền
-    is_active BOOLEAN NULL DEFAULT true,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 	updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
+
 delete from permissions where id = 1;
 update permissions set is_active = 1 where id=8;
 select * from permissions;
@@ -43,7 +44,6 @@ CREATE TABLE users (
 );
 select * from users;
 
-DELETE from users where id = 5;
 -- Bảng user_roles: Liên kết người dùng với vai trò
 CREATE TABLE user_roles (
     user_id INT NOT NULL,                        -- ID người dùng
@@ -53,6 +53,8 @@ CREATE TABLE user_roles (
     FOREIGN KEY(role_id) REFERENCES roles(id) ON DELETE CASCADE
 );
 select * from user_roles;
+
+delete from  user_roles where user_id = 11;
 
 -- Bảng permission_roles: Liên kết vai trò với quyền
 CREATE TABLE permission_roles (
@@ -82,7 +84,26 @@ CREATE TABLE user_logs (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+ALTER TABLE user_logs ADD INDEX(user_id);
+ALTER TABLE user_logs ADD INDEX(created_at);
+select * from user_logs;
 
+CREATE TABLE shop_applications (
+    id INT PRIMARY KEY AUTO_INCREMENT,          -- 🔑 ID profile
+    user_id INT NOT NULL UNIQUE,                -- FK tới users
+    vat_number VARCHAR(50) NULL,                -- Mã số thuế
+    business_doc VARCHAR(255) NULL,             -- Giấy phép kinh doanh / tài liệu liên quan
+    address VARCHAR(255) NULL,                  -- Địa chỉ cửa hàng hoặc công ty
+    phone VARCHAR(20) NULL,                     -- Số điện thoại liên hệ
+	reason TEXT NULL,                           -- lý do     
+    status ENUM('pending','approved','rejected') DEFAULT 'pending', -- Trạng thái duyệt bởi admin
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+select * from shop_applications;
+delete from shop_applications where id = 6;
+UPDATE shop_applications set status = 'pending'  WHERE id = 7;
 -- =====================================================================
 -- 🏬 NHÓM 2: CỬA HÀNG & SẢN PHẨM
 -- =====================================================================
@@ -99,16 +120,23 @@ CREATE TABLE shops (
     FOREIGN KEY(seller_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+
+select * from shops;
 -- Bảng categories: Danh mục sản phẩm (đa cấp)
 CREATE TABLE categories (
-    id INT PRIMARY KEY AUTO_INCREMENT,           -- 🔑 ID danh mục
-    name VARCHAR(100) NOT NULL,                  -- Tên danh mục
-    slug VARCHAR(255) UNIQUE NOT NULL,           -- Slug (URL)
-    parent_id INT NULL,                          -- ID danh mục cha (nếu có)
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    parent_id INT NULL,
+    description TEXT NULL,
+    image VARCHAR(255) NULL,
+    sort_order INT DEFAULT 0,
+    status TINYINT DEFAULT 1,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(parent_id) REFERENCES categories(id) ON DELETE SET NULL
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL
 );
-
+select * from categories;
 -- Bảng products: Thông tin sản phẩm chính
 CREATE TABLE products (
     id INT PRIMARY KEY AUTO_INCREMENT,           -- 🔑 ID sản phẩm

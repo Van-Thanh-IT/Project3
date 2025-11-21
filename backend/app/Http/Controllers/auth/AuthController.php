@@ -16,9 +16,11 @@ use Tymon\JWTAuth\Facades\JWTAuth;
 use Laravel\Socialite\Facades\Socialite;
 use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
+use App\Traits\LogUserAction;
 
 class AuthController extends Controller
 {
+    use LogUserAction;
    // Hàm đăng ký
     public function register(RegisterUserRequest $request){
         Log::info($request->all());
@@ -49,7 +51,19 @@ class AuthController extends Controller
         if (!$token) {
             return response()->json(['message' => 'email hoặc mật khẩu không đúng!'], 401);
         }
+        
+        $this->logAction("login_local");
+
         return $this->respondWithToken($token);
+    }
+
+      protected function respondWithToken($token)
+    {
+        return response()->json([
+            'access_token' => $token,
+            'token_type' => 'bearer',
+            'expires_in' => auth()->factory()->getTTL() * 60
+        ]);
     }
 
 
@@ -61,6 +75,8 @@ class AuthController extends Controller
         );
 
         if ($status === Password::RESET_LINK_SENT) {
+
+            $this->logAction('Yêu cầu đổi mật khẩu');
             return response()->json([
                 'success' => true,
                 'message' => "Email đặt lại mật khẩu đã được gửi! Vui lòng kiểm tra hộp thư của bạn."
@@ -92,9 +108,10 @@ class AuthController extends Controller
             function ($user, $password) {
                 $user->password = Hash::make($password);
                 $user->save();
+                $this->logAction('Mật khẩu đã được thay đổi!',$user->id );
             }
         );
-
+       
         if ($status == Password::PASSWORD_RESET) {
             return response()->json(['message' => 'Đặt lại mật khẩu thành công']);
         }
@@ -103,12 +120,13 @@ class AuthController extends Controller
     }
     
     // lấy thoại người dùng hiện tại
-    public function me(){
+   public function me(){
         $user = auth()->user();
+
         return response()->json([
-            'user' => $user,
-            'roles' => $user->getRoleNames(), 
-            'permissions' => $user->getAllPermissions()->pluck('name') 
+            'user'        => $user,
+            'roles'       => $user->roles->pluck('name'),
+            'permissions' => $user->permissions()->pluck('name'),
         ]);
     }
 
@@ -151,6 +169,7 @@ class AuthController extends Controller
                 ]);
             }
             $this->assignDefaultRole($user);
+            $this->logAction("login_google", $user->id);
 
             $token = JWTAuth::fromUser($user);
             return $this->respondWithToken($token);
@@ -181,7 +200,7 @@ class AuthController extends Controller
                 ]);
             } else {
                 $user = User::create([
-                    'email' => $fbUser->getEmail(),
+                    'email' => $fbUser->getEmail() ?? ($fbUser->getId() . '@facebook.com'),
                     'username' => $fbUser->getName(),
                     'provider' => 'facebook',
                     'provider_id' => $fbUser->getId(),
@@ -191,6 +210,8 @@ class AuthController extends Controller
             }
 
             $this->assignDefaultRole($user);
+
+            $this->logAction("login_facebook", $user->id);
 
             // Tạo JWT
             $token = JWTAuth::fromUser($user);
@@ -210,32 +231,18 @@ class AuthController extends Controller
         }
     }
             
-     protected function respondWithToken($token)
-    {
-        return response()->json([
-            'access_token' => $token,
-            'token_type' => 'bearer',
-            'expires_in' => auth()->factory()->getTTL() * 60
-        ]);
-    }
-
-
+   
     // Hàm để gán vai trò mặc định
     private function assignDefaultRole(User $user)
     {
         // Kiểm tra xem người dùng đã có vai trò nào chưa
-        if ($user->roles()->count() === 0) {
-            $defaultRole = Role::where('name', 'user')->first();
-            if ($defaultRole) {
-                $user->roles()->syncWithoutDetaching($defaultRole->id);
-            } else {
-                // Xử lý trường hợp vai trò 'user' chưa tồn tại
-                $role = Role::create([
-                    'name' => 'user',
-                    'description' => 'Vai trò người dùng'
-                ]);
-                $user->roles()->syncWithoutDetaching($role->id);
-            }
+        if (!$user->roles()->exists()) {
+            $defaultRole = Role::firstOrCreate(
+                ['name' => 'user'],
+                ['description' => 'Vai trò người dùng']
+            );
+            // Gán role cho user
+            $user->roles()->syncWithoutDetaching($defaultRole->id);
         }
     }
 }

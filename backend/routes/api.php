@@ -1,12 +1,18 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\API\Admin\PermissionController;
-use App\Http\Controllers\API\Admin\ProductController;
+use App\Http\Controllers\API\Admin\ProductController as AdminProductController;
+use App\Http\Controllers\API\Admin\CategoryController;
 use App\Http\Controllers\API\Admin\UserController;
- 
+use App\Http\Controllers\API\Admin\SellerController as AdminSellerController;
+use App\Http\Controllers\API\Admin\StaffController;
+
+use App\Http\Controllers\API\Seller\ShopApplicationController;
+use App\Http\Controllers\API\Seller\ProductController as SellerProductController;
+
 // nhóm auth
 Route::prefix("auth")->group(function(){
     // public routes
@@ -27,31 +33,56 @@ Route::prefix("auth")->group(function(){
 
 
 Route::middleware(["auth:jwt", "check.role:admin"])->prefix("admin")->group(function(){
-    Route::prefix("permission")->group(function(){
-        Route::get("/", [PermissionController::class, "index"]);
-        Route::post("/", [PermissionController::class, "store"]);
-        Route::post('{permissionId}/assign-staff', [PermissionController::class, 'assignPermissionToStaff']);
-        Route::delete("/{id}", [PermissionController::class, "destroy"]);
+   
+    Route::prefix("permissions")->group(function(){
+    Route::get('/', [PermissionController::class, 'getPermissionsWithStaffStatus']);
+    Route::post('/', [PermissionController::class, 'createPermission']);
+    Route::post('/assign', [PermissionController::class, 'assignPermissionToStaff']);
     });
 
-  
+    Route::prefix("staffs")->group(function(){
+        Route::get('/', [StaffController::class, 'getAllStaffs']);        
+        Route::get('{id}', [StaffController::class, 'getStaffById']);      
+        Route::post('/', [StaffController::class, 'createStaff']);        
+        Route::put('{id}', [StaffController::class, 'updateStaff']);      
+        Route::patch('{id}/status', [StaffController::class, 'updateStaffStatus']);
+    });
+
+    
+    Route::prefix("users")->group(function(){
+        Route::get("/", [UserController::class, "index"]);
+        Route::get("/{id}", [UserController::class, "show"]);
+        Route::put("/{id}/status", [UserController::class, "updateStatus"]);
+    });
+
+    Route::prefix("sellers")->group(function(){
+        Route::get('/', [AdminSellerController::class, 'getAllSellers']);      
+        Route::get('/pending', [AdminSellerController::class, 'pending']);              
+        Route::post('/approve/{id}', [AdminSellerController::class, 'approve']); 
+        Route::post('/reject/{id}', [AdminSellerController::class, 'reject']);   
+       Route::post('/revoke/{id}', [AdminSellerController::class, 'revokeSeller']);
+        Route::get('/revoked', [AdminSellerController::class, 'getRevokedList']); 
+        Route::post('/restore/{id}', [AdminSellerController::class, 'restore']);
+    });
+
+   Route::prefix("categories")->group(function(){
+    Route::get('/', [CategoryController::class, 'getALlCategories']);
+    Route::post('/', [CategoryController::class, 'createCategory']);
+    Route::get('/{id}', [CategoryController::class, 'getCatygoryById']);
+    Route::put('/{id}', [CategoryController::class, 'updateCategory']);
+    Route::patch('/{id}/toggle', [CategoryController::class, 'toggleStatus']);
+   });
 });
 
 Route::middleware(["auth:jwt", "check.role:staff"])->prefix("staff")->group(function(){
         
     Route::prefix("product")->group(function(){
-        Route::get("/", [ProductController::class, "index"]);
-        Route::post("/", [ProductController::class, "store"]);
-        Route::put("/{id}", [ProductController::class, "update"]);
-        Route::delete("/{id}", [ProductController::class, "destroy"]);
+        Route::get("/", [SellerProductController::class, "index"]);
+        Route::post("/", [SellerProductController::class, "store"]);
+        Route::put("/{id}", [SellerProductController::class, "update"]);
+        Route::delete("/{id}", [SellerProductController::class, "destroy"]);
     });
 
-    Route::prefix("user")->group(function(){
-        Route::get("/", [UserController::class, "index"]);
-        Route::post("/", [UserController::class, "store"]);
-        Route::put("/{id}", [UserController::class, "update"]);
-        Route::delete("/{id}", [UserController::class, "destroy"]);
-    });
 });
 
 Route::middleware(["auth:jwt", "check.role:seller"])->prefix("seller")->group(function(){
@@ -59,7 +90,9 @@ Route::middleware(["auth:jwt", "check.role:seller"])->prefix("seller")->group(fu
 });
 
 Route::middleware(["auth:jwt", "check.role:user"])->prefix("user")->group(function(){
-    
+    Route::post('register', [ShopApplicationController::class, 'register']); 
+    Route::get('my-profile', [ShopApplicationController::class, 'myProfile']);
 });
+
 
 

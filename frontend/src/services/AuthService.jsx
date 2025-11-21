@@ -11,8 +11,6 @@ const AuthService = {
     },
     resetPassword: (data) => axiosClient.post("/auth/reset-password", data),
     refresh: () => axiosClient.post("/refresh"),
-    getPermissions: () => axiosClient.get("/permissions"),
-    getRoles: () => axiosClient.get("/roles"),
     getMe: () => axiosClient.post("auth/me"),
 }
 

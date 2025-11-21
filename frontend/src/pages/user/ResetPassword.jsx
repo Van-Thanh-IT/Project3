@@ -37,7 +37,7 @@ const ResetPassword = () => {
   return (
     <div>
       <h2>Đặt lại mật khẩu</h2>
-      <form onSubmit={handleSubmit}>
+      <form  onSubmit={handleSubmit}>
         <p>Email: {email}</p>
         <input
           type="password"

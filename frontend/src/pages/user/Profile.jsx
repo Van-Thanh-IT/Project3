@@ -4,16 +4,16 @@ import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 const Profile = () => {
-  const { me, loading, logout, forgotPassword } = useAuth();
-console.log(me);
+  const { me, roles, loading, logout, forgotPassword} = useAuth();
+  const isSeller = roles.includes("seller");
   const [cooldown, setCooldown] = useState(false);
   const navigate = useNavigate();
   
-  const handleLogout = () => {
-    if (!window.confirm("Bạn có chắc muốn đăng xuất không?")) return;
-    logout();
-    navigate("/login");
-  };
+  const handleLogout = async () => { // Thêm async
+      if (!window.confirm("Bạn có chắc muốn đăng xuất không?")) return;
+      await logout(); 
+      navigate("/login");
+    };
 
 const handleForgotPassword = async () => {
   if (cooldown) return;
@@ -98,6 +98,10 @@ const handleForgotPassword = async () => {
 
       {/* Nút hành động */}
       <div className="mt-8 flex justify-end gap-4">
+
+      {!isSeller && (
+          <a href="/seller-registration">Đăng ký bán hàng</a>
+        )}
 
       <button onClick={handleLogout} className="px-4 py-2 bg-red-600 hover:bg-gray-300 rounded-lg text-gray-700">
           Đăng xuất
