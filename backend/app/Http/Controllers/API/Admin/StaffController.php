@@ -9,8 +9,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Role;
+use App\Traits\CloudinaryUploadTrait;
 class StaffController extends Controller
 {
+    use CloudinaryUploadTrait;
     public function getAllStaffs(){
         $this->authorize('viewAny', User::class);
 
@@ -69,31 +71,52 @@ class StaffController extends Controller
         ]);
     }
 
-    public function createStaff(UserRequest $request){
+     public function createStaff(UserRequest $request)
+    {
         $this->authorize('create', User::class);
 
-        $user = User::create([
-            'username' => $request->username,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'phone' => $request->phone,
-            'gender' => $request->gender,
-            'avatar' => $request->avatar,
-            'date_of_birth' => $request->date_of_birth,
-            'status' => 'active'
-        ]);
+        DB::beginTransaction();
 
-        $staffRole = Role::firstOrCreate(
-            ['name' => 'staff'],
-            ['description' => 'Nhân viên của hệ thống']
-        );
+        try {
+            $avatar = null;
+            if ($request->hasFile('avatar')) {
+                $avatar = $this->uploadToCloudinary($request->file('avatar'));
+            }
 
-        // Gán role
-        $user->roles()->syncWithoutDetaching($staffRole->id);
+            $user = User::create([
+                'username'      => $request->username,
+                'email'         => $request->email,
+                'password'      => Hash::make($request->password),
+                'phone'         => $request->phone,
+                'gender'        => $request->gender,
+                'avatar'        => $avatar,
+                'date_of_birth' => $request->date_of_birth,
+                'status'        => 'active',
+            ]);
 
-        return response()->json([
-            'message' => 'Nhân viên đã được tạo và gán role staff',
-            'user' => $user
-        ]);
+            // Gán role staff
+            $staffRole = Role::firstOrCreate(
+                ['name' => 'staff'],
+                ['description' => 'Nhân viên của hệ thống']
+            );
+
+            $user->roles()->syncWithoutDetaching($staffRole->id);
+
+            DB::commit();
+
+            return response()->json([
+                'status'  => true,
+                'message' => 'Nhân viên đã được tạo và gán role staff',
+                'data'    => $user
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status'  => false,
+                'message' => 'Tạo nhân viên thất bại: ' . $e->getMessage()
+            ], 400);
+        }
     }
 }

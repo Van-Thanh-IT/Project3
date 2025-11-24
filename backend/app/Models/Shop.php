@@ -20,6 +20,8 @@ class Shop extends Model
         'avatar',
     ];
 
+    public $timestamps =false;
+
     public function products()
     {
         return $this->hasMany(Product::class);

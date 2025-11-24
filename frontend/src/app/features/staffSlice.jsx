@@ -71,7 +71,7 @@ const staffSlice = createSlice({
   name: "staff",
   initialState,
   reducers: {
-    clearStaffState: (state) => {
+    clearStaffError: (state) => {
       state.error = null;
       state.successMessage = null;
       state.loading = false;
@@ -127,5 +127,5 @@ const staffSlice = createSlice({
   },
 });
 
-export const { clearStaffState } = staffSlice.actions;
+export const { clearStaffError } = staffSlice.actions;
 export default staffSlice.reducer;

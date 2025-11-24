@@ -108,5 +108,5 @@ const categorySlice = createSlice({
   },
 });
 
-export const { resetCategoryState } = categorySlice.actions;
+export const { resetCategoryState} = categorySlice.actions;
 export default categorySlice.reducer;

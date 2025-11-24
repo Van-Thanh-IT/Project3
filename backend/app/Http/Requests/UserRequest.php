@@ -8,7 +8,7 @@ class UserRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true;
+        return true; // Hoặc dùng policy nếu muốn
     }
 
     public function rules(): array
@@ -20,7 +20,7 @@ class UserRequest extends FormRequest
             'phone'         => 'nullable|string|max:20',
             'gender'        => 'nullable|in:male,female,other',
             'date_of_birth' => 'nullable|date',
-            'avatar'        => 'nullable|url|max:500',
+            'avatar'        => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // file upload
         ];
     }
 
@@ -38,14 +38,17 @@ class UserRequest extends FormRequest
             'password.required' => 'Vui lòng nhập mật khẩu',
             'password.string'   => 'Mật khẩu phải là chuỗi ký tự',
             'password.min'      => 'Mật khẩu tối thiểu 6 ký tự',
-            // 'password.confirmed'=> 'Xác nhận mật khẩu không khớp',
 
             'phone.string'      => 'Số điện thoại phải là chuỗi ký tự',
             'phone.max'         => 'Số điện thoại không quá 20 ký tự',
 
             'gender.in'         => 'Giới tính không hợp lệ',
-            'avatar.url'        => 'Đường dẫn ảnh không hợp lệ',
-            'avatar.max'        => 'Đường dẫn ảnh không quá 500 ký tự',
+
+            'date_of_birth.date' => 'Ngày sinh không hợp lệ',
+
+            'avatar.image'      => 'File avatar phải là hình ảnh',
+            'avatar.mimes'      => 'Ảnh avatar chỉ chấp nhận jpeg, png, jpg, gif',
+            'avatar.max'        => 'Ảnh avatar tối đa 2MB',
         ];
     }
 }

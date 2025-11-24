@@ -19,10 +19,43 @@ const Sidebar = () => {
   const handleProfile = () => navigate("/profile");
 
   const menuItems = [
-    { name: "Trang chủ", path: "/seller", icon: <FaIcons.FaHome size={20} /> },
-    { name: "Quản lý sản phẩm", path: "/seller/products", icon: <FaIcons.FaBoxOpen size={20} /> },
-    { name: "Cài đặt", path: "/seller/settings", icon: <FaIcons.FaListAlt size={20} /> },
-  ];
+      { 
+        name: "Trang chủ", 
+        path: "/seller", 
+        icon: <FaIcons.FaHome size={20} /> 
+      },
+      { 
+        name: "Quản lý sản phẩm", 
+        path: "/seller/products", 
+        icon: <FaIcons.FaBoxOpen size={20} /> 
+      },
+      { 
+        name: "Quản lý đơn hàng", 
+        path: "/seller/orders", 
+        icon: <FaIcons.FaShoppingBag size={20} /> 
+      },
+      { 
+        name: "Quản lý khách hàng", 
+        path: "/seller/customers", 
+        icon: <FaIcons.FaUsers size={20} /> 
+      },
+      { 
+        name: "Quản lý khuyến mãi & voucher", 
+        path: "/seller/promotions", 
+        icon: <FaIcons.FaTicketAlt size={20} /> 
+      },
+      { 
+        name: "Quản lý kho hàng", 
+        path: "/seller/inventory", 
+        icon: <FaIcons.FaWarehouse size={20} /> 
+      },
+      { 
+        name: "Cài đặt", 
+        path: "/seller/settings", 
+        icon: <FaIcons.FaCog size={20} /> 
+      },
+    ];
+
 
   return (
     <div className="fixed top-0 left-0 h-screen w-64 bg-gray-200  flex flex-col overflow-y-auto">

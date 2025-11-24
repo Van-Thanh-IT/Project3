@@ -8,12 +8,12 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState([]);
   const [permissions, setPermissions] = useState([]);
-
   const fetchMe = async () => {
     try {
       const res = await AuthService.getMe();
       setMe(res.data.user);
       setRoles(res.data.roles);
+       
       setPermissions(res.data.permissions);
       return res.data;
     } catch (err) {

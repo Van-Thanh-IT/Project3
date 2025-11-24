@@ -30,8 +30,12 @@ import AdminCategoryManagerment from "../pages/admin/CategoryManagerment";
 // seller
 import SellerDashboard from "../pages/seller/Dashboard";
 import SellerProductManagerment from "../pages/seller/ProductManagerment";
+import SellerOrderManagerment from "../pages/seller/OrderManagerment";
+import SellerCustomerManagerment from "../pages/seller/CustomerManagerment";
+import SellerPromotionManagerment from "../pages/seller/PromotionManagerment";
+import SellerInventoryManagerment from "../pages/seller/InventoryManagerment";
 import SellerSettings from "../pages/seller/Settings";
-import SellerRegistration from "../pages/seller/Registration";
+import SellerRegistration from "../pages/seller/Registeration";
 // protected route
 import ProtectedRoute from "./ProtectedRoute";
 
@@ -75,6 +79,10 @@ const AppRoute = () => {
         <Route path="/seller" element={<SellerMainLayout />}>
           <Route index element={<SellerDashboard />} />
           <Route path="products" element={<SellerProductManagerment />} />
+          <Route path="orders" element={<SellerOrderManagerment />} />
+          <Route path="customers" element={<SellerCustomerManagerment />} />
+          <Route path="promotions" element={<SellerPromotionManagerment />} />
+          <Route path="inventory" element={<SellerInventoryManagerment />} />
           <Route path="settings" element={<SellerSettings />} />
         </Route>
       </Route>

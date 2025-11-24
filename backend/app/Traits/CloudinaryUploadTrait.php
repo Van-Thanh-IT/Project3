@@ -16,19 +16,45 @@ trait CloudinaryUploadTrait
      * @param string $folder Tên folder trên Cloudinary
      * @return string|null Trả về URL ảnh hoặc null nếu lỗi
      */
-    public function uploadToCloudinary(UploadedFile $file, $folder = 'uploads')
+    // public function uploadToCloudinary(UploadedFile $file)
+    // {
+    //     try {
+    //         // Thực hiện upload
+    //         $upload = Cloudinary::upload(
+    //             $file->getRealPath(),
+    //             ['folder' =>"images"]
+    //         );
+
+    //         // Trả về đường dẫn HTTPS (Secure Path)
+    //         return $upload->getSecurePath();
+    //     } catch (Exception $e) {
+    //         // Ghi log lỗi để debug nếu cần
+    //         Log::error('Cloudinary Upload Error: ' . $e->getMessage());
+    //         return null;
+    //     }
+    // }
+
+    public function uploadToCloudinary(UploadedFile $file)
     {
         try {
-            // Thực hiện upload
+            // Lấy extension để xác định resource_type
+            $extension = strtolower($file->getClientOriginalExtension());
+            $resourceType = in_array($extension, ['jpg','jpeg','png','gif']) ? 'image' : 'raw';
+
+            // Upload file
             $upload = Cloudinary::upload(
                 $file->getRealPath(),
-                ['folder' => $folder]
+                [
+                    'folder' => "project3",
+                    'resource_type' => $resourceType,
+                    'filename_override' => $file->getClientOriginalName()
+                ]
             );
-
-            // Trả về đường dẫn HTTPS (Secure Path)
+            // Trả về URL an toàn HTTPS
             return $upload->getSecurePath();
+
         } catch (Exception $e) {
-            // Ghi log lỗi để debug nếu cần
+            // Log lỗi để debug
             Log::error('Cloudinary Upload Error: ' . $e->getMessage());
             return null;
         }

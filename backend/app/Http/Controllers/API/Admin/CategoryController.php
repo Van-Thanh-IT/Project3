@@ -7,11 +7,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CategoryRequest;
+use App\Traits\CloudinaryUploadTrait;
 
 class CategoryController extends Controller
 {
+    use CloudinaryUploadTrait;
 
-    public function getALlCategories()
+    public function getAllCategories()
     {
         $categories = Category::with('parent')
             ->orderBy('sort_order', 'ASC')
@@ -23,20 +25,33 @@ class CategoryController extends Controller
     /**
      * Tạo danh mục
      */
-    public function createCategory(CategoryRequest $request)
+   public function createCategory(CategoryRequest $request)
     {
-        $maxOrder = Category::where('parent_id', $request->parent_id)
-            ->max('sort_order');
+        $imageUrl = null;
+        if ($request->hasFile('image')) {
+            $imageUrl = $this->uploadToCloudinary($request->file('image'));
+        }
 
+        // Sinh slug từ tên
+        $slug = Str::slug($request->name);
+
+        // Kiểm tra xem slug đã tồn tại chưa
+        if (Category::where('slug', $slug)->exists()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Tên danh mục hoặc slug đã tồn tại!'
+            ], 400);
+        }
+
+        $maxOrder = Category::where('parent_id', $request->parent_id)->max('sort_order');
         $newSortOrder = ($maxOrder !== null ? $maxOrder + 1 : 1);
 
         $category = Category::create([
             'name'        => $request->name,
-            'slug'        => Str::slug($request->name),
+            'slug'        => $slug,
             'parent_id'   => $request->parent_id,
             'description' => $request->description,
-            'image'       => $request->image,
-            'status'      => $request->status ?? 1,
+            'image'       => $imageUrl,
             'sort_order'  => $newSortOrder,
         ]);
 
@@ -47,29 +62,32 @@ class CategoryController extends Controller
         ], 201);
     }
 
-    /**
-     * Xem chi tiết danh mục
-     */
-    public function getCatygoryById($id)
-    {
-        $category = Category::findOrFail($id);
-        return response()->json($category);
-    }
-
-    /**
-     * Cập nhật danh mục
-     */
     public function updateCategory(CategoryRequest $request, $id)
     {
         $category = Category::findOrFail($id);
+        $imageUrl = null; 
+
+        // Upload ảnh mới nếu có
+        if ($request->hasFile('image')) {
+            $imageUrl = $this->uploadToCloudinary($request->file('image'));
+        } else {
+            $imageUrl = $category->image; 
+        }
+
+        $slug = Str::slug($request->name);
+        if (Category::where('name', $slug)->exists()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Tên danh mục hoặc slug đã tồn tại!'
+            ], 400); 
+        }
+
         $category->update([
             'name'        => $request->name ?? $category->name,
             'slug'        => $request->name ? Str::slug($request->name) : $category->slug,
             'parent_id'   => $request->parent_id ?? $category->parent_id,
             'description' => $request->description ?? $category->description,
-            'image'       => $request->image ?? $category->image,
-            'status'      => $request->status ?? $category->status,
-            'sort_order'  => $request->sort_order ?? $category->sort_order,
+            'image'       => $imageUrl ?? $category->image,
         ]);
 
         return response()->json([
@@ -79,9 +97,12 @@ class CategoryController extends Controller
         ]);
     }
 
-    /**
-     * Ẩn / Hiện danh mục (toggle)
-     */
+    public function getCatygoryById($id)
+    {
+        $category = Category::findOrFail($id);
+        return response()->json($category);
+    }
+
     public function toggleStatus($id)
     {
         $category = Category::findOrFail($id);

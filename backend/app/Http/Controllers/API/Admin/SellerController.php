@@ -59,50 +59,6 @@ class SellerController extends Controller
         ]);
     }
 
-    
-    // public function approve($id)
-    // {
-    //     $profile = ShopApplication::findOrFail($id);
-
-    //     if ($profile->status === 'approved') {
-    //         return response()->json([
-    //             'status'  => 'error',
-    //             'message' => 'Hồ sơ này đã được duyệt trước đó.'
-    //         ], 400);
-    //     }
-
-    //     // 1. Cập nhật trạng thái hồ sơ
-    //     $profile->update(['status' => 'approved']);
-
-    //     // 2. Tìm hoặc tạo role "seller"
-    //     $role = Role::firstOrCreate(['name' => 'seller']);
-
-    //     // 3. Gán quyền cho user
-    //     DB::table('user_roles')->insertOrIgnore([
-    //         'user_id' => $profile->user_id,
-    //         'role_id' => $role->id,
-    //     ]);
-
-    //     // 4. Tạo shop mặc định nếu chưa có
-    //     $user = User::find($profile->user_id);
-    //     if (!$user->shop) {
-    //         $slug = \Str::slug($user->username . '-shop');
-    //         \App\Models\Shop::create([
-    //             'seller_id' => $user->id,
-    //             'name' => $user->username . ' Shop',
-    //             'slug' => $slug,
-    //             'description' => 'Cửa hàng mặc định được tạo bởi hệ thống',
-    //             'avatar' => 'default.png',
-    //         ]);
-    //     }
-
-    //     return response()->json([
-    //         'status'  => 'success',
-    //         'message' => 'Duyệt yêu cầu seller thành công và tạo shop mặc định.',
-    //         'user_id' => $profile->user_id
-    //     ]);
-    // }
-
     /**
      * Admin từ chối seller
      */

@@ -75,11 +75,11 @@ const SellerDetailModal = ({ open, onClose, currentSeller }) => {
 
             <p>
               <span className="font-medium">Giấy phép kinh doanh:</span>{" "}
-              {currentSeller.business_doc || "Không cung cấp"}
+              <a href={currentSeller.business_doc || "Không cung cấp"} target="_blank">Xem hồ sơ giấy phép</a>
             </p>
 
             <p>
-              <span className="font-medium">Ngày tạo:</span>{" "}
+              <span className="font-medium">Ngày đăng ký:</span>{" "}
               {currentSeller.created_at ? new Date(currentSeller.created_at).toLocaleString("vi-VN") : "N/A"}
             </p>
           </div>

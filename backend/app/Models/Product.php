@@ -4,6 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\Shop;
+use App\Models\category;
+use App\Models\ProductVariant;
+use App\Models\ProductImage;
+
 
 class Product extends Model
 {
@@ -12,30 +17,36 @@ class Product extends Model
     protected $table = "products";
 
     protected $fillable = [
-        
+       'shop_id',
+       'category_id',
+       'name',
+       'slug',
+       'description',
+       'price',
+       'status',
     ];
+
+    public $timestamps = false;
+
 
     public function shop(){
         return $this->belongsTo(Shop::class);
     }
-
-    public function Variants()
-    {
+    
+    public function Variants(){
         return $this->hasMany(ProductVariant::class);
     }
 
-    public function images()
-    {
+    public function images(){
         return $this->hasMany(ProductImage::class);
     }
-  
-      public function attributes()
+
+    public function primaryImage()
     {
-        return $this->hasMany(ProductAttribute::class);
+        return $this->hasOne(ProductImage::class)->where('is_primary', 1);
     }
 
-      public function category()
-    {
+      public function category(){
         return $this->belongsTo(Category::class);
     }
 }
